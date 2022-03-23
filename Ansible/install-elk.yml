@@ -1,0 +1,50 @@
+---
+- name: Install elk to VM
+  hosts: elk
+  become: True
+  tasks:
+       - name: docker.io
+         apt:
+            update_cache: yes
+            force_apt_get: yes
+            name: docker.io
+            state: present
+
+       - name: Install pip3
+         apt:
+            name: python3-pip
+            force_apt_get: yes
+            update_cache: yes
+            state: present
+      
+       - name: Install docker python module
+         pip:
+            name: docker
+            state: present
+
+       - name: configure memory
+         ansible.posix.sysctl:
+            name: vm.max_map_count
+            value: '262144'
+            state: present
+            reload: yes
+            sysctl_file: /etc/sysctl.conf
+            sysctl_set: yes
+
+
+       - name: download and launch a docker web container
+         docker_container:
+            name: elk
+            image: sebp/elk:761
+            state: started
+            restart_policy: always
+            published_ports:
+                - 5601:5601
+                - 9200:9200
+                - 5044:5044
+
+       - name: Enable docker service 
+         systemd:
+            name: docker
+            enabled: yes
+
